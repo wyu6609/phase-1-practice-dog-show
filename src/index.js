@@ -1,89 +1,98 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const dogName = document.getElementById("dogName");
-  const dogBreed = document.getElementById("dogBreed");
-  const dogSex = document.getElementById("dogSex");
-  const dogForm = document.getElementById("dog-form");
-  const dogTable = document.getElementById("table-body");
+  // global constants for
   const URI = "http://localhost:3000/dogs";
-  document.addEventListener("click", handleEvents);
-  //fetch dog API
+  const dogForm = document.getElementById("dog-form");
+  const tableBody = document.getElementById("table-body");
+  const dogName = document.getElementById("dog-name");
+  const dogBreed = document.getElementById("dog-breed");
+  const dogSex = document.getElementById("dog-sex");
+  //fetch api data
   function fetchDogs() {
     fetch(URI)
       .then((response) => response.json())
       .then((data) => {
         console.log("Success:");
-        initializeData(data);
+        //pass dog data to initialize function
+        init(data);
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   }
-
   //initialize data
-  function initializeData(dogs) {
-    dogs.map((dog) => {
-      renderTable(dog);
+
+  function init(dogs) {
+    //render each dog object to table row
+    dogs.forEach((dog) => {
+      renderDog(dog);
     });
   }
-  //render table
-  function renderTable(dogObj) {
-    //creates table row for each dog Object
-    let newRow = document.createElement("tr");
+  //render Dog object
+  function renderDog(dogObj) {
+    //create table row for dog Object
+    let dogRow = document.createElement("tr");
     let dogInfo = `
-    <td data-id= ${dogObj.id} >${dogObj.name}</td>
+    <td>${dogObj.name}</td>
     <td>${dogObj.breed}</td>
     <td>${dogObj.sex}</td>
-    <td><button data-id = ${dogObj.id}>Edit</button></td>
-    `;
-
-    newRow.innerHTML = dogInfo;
-    dogTable.appendChild(newRow);
+    <td><button id = ${dogObj.id}>Edit</button></td>`;
+    dogRow.innerHTML = dogInfo;
+    //add button functionality
+    //append table row to table-body el
+    tableBody.appendChild(dogRow);
+    document.getElementById(dogObj.id).addEventListener("click", () => {
+      editButton(dogObj);
+    });
   }
 
-  function handleEvents(event) {
-    event.preventDefault();
-    console.log(event.target.dataset.id);
-    if (event.target.id === "edit-btn") {
-      editButtonFunctionality(event.target.dataset.id);
-    } else if (event.target.id === "dog-form") {
-      submitButtonFunctionality(event);
-    }
+  //editButton functionality
+  function editButton(dogObj) {
+    console.log(dogObj.id, dogName, dogObj.name);
+    // take dogObj properties insert into input Text content
+    dogName.setAttribute("value", dogObj.name);
+    dogBreed.setAttribute("value", dogObj.breed);
+    dogSex.setAttribute("value", dogObj.sex);
+    //pass dog Obj ID to submit function
+    let dogID = dogObj.id;
+    submitButton(dogID);
   }
-  //patch request onto
-  function editButtonFunctionality(id) {
-    fetch(`${BASE_URL}/${id}`)
-      .then((res) => res.json())
-      .then((dog) => {
-        (dogForm.name.value = dog.name),
-          (dogForm.sex.value = dog.sex),
-          (dogForm.breed.value = dog.breed),
-          (dogForm.dataset.id = dog.id);
-      });
+  //submit Button functionality
+  function submitButton(dogID) {
+    console.log(dogID);
+    dogForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      //create new object, then POST
+      let editedDogObj = {
+        name: dogName.value,
+        breed: dogBreed.value,
+        sex: dogSex.value,
+      };
+      console.log(editedDogObj);
+      patchEditedOBJ(editedDogObj, dogID);
+    });
+    //create newObj
   }
-  function submitButtonFunctionality(event) {
-    let dog = {
-      name: event.target.parentElement.name.value,
-      sex: event.target.parentElement.sex.value,
-      breed: event.target.parentElement.breed.value,
-    };
 
-    fetch(`${BASE_URL}/${event.target.parentElement.dataset.id}`, {
-      method: "PATCH",
+  //patch request
+  function patchEditedOBJ(editedDogObj, dogID) {
+    fetch(`${URI}/${dogID}`, {
+      method: "PATCH", // or 'PUT'
       headers: {
-        "content-type": "application/json",
-        accepts: "application/json",
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(dog),
+      body: JSON.stringify(editedDogObj),
     })
-      .then((res) => res.json())
-      .then((dog) => {
-        let foundDog = document.querySelector(`tr[data-id="${dog.id}"]`);
-        foundDog.children[0].innerText = dog.name;
-        foundDog.children[1].innerText = dog.breed;
-        foundDog.children[2].innerText = dog.sex;
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Success:", data);
+        location.reload();
+      })
+      .catch((error) => {
+        console.error("Error:", error);
       });
   }
-  // editButton
+  // submit addEvent listener
 
+  //fetch the api to start the web app
   fetchDogs();
 });
